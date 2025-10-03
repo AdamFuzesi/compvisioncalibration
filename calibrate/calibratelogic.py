@@ -20,8 +20,8 @@ as well as the cv2.calibratecamera implementation without its visual but simply 
 
 class CalibrationConfig:
     # establishing basic geometric params 
-    def __init__(self, checkerboard_size: Tuple[int, int] = (13, 9), squareSize: float = 20.0, outputDir: str = "output"):
-        self.checkerboard_size = checkerboard_size
+    def __init__(self, checkerboardSize: Tuple[int, int] = (13, 9), squareSize: float = 20.0, outputDir: str = "output"):
+        self.checkerboardSize = checkerboardSize
         self.squareSize = squareSize
         self.outputDir = Path(outputDir)
         self.corner_detection_dir = self.outputDir / "corner_detections"
@@ -62,9 +62,9 @@ class CornerDetector:
             for flags in self.detection_flags:
                 try:
                     if flags is not None:
-                        ret, corners = cv2.findChessboardCorners(gray, self.config.checkerboard_size, flags )
+                        ret, corners = cv2.findChessboardCorners(gray, self.config.checkerboardSize, flags )
                     else:
-                        ret, corners = cv2.findChessboardCorners(gray, self.config.checkerboard_size)
+                        ret, corners = cv2.findChessboardCorners(gray, self.config.checkerboardSize)
                     
                     if ret:
                         # backset if needed
@@ -87,7 +87,7 @@ class CornerDetector:
             return
         # draws detected corners
         img_vis = img.copy()
-        cv2.drawChessboardCorners(img_vis, self.config.checkerboard_size, corners, True)
+        cv2.drawChessboardCorners(img_vis, self.config.checkerboardSize, corners, True)
         
         # resize if too large for better file size
         h, w = img_vis.shape[:2]
@@ -214,7 +214,7 @@ class ZhangCalibrationLogic:
     
     def _generate_world_points(self) -> np.ndarray:
         """Generate 3D coordinates of checkerboard corners in world frame."""
-        cols, rows = self.config.checkerboard_size
+        cols, rows = self.config.checkerboardSize
         world_points = np.zeros((rows * cols, 3), dtype=np.float32)
         
         for i in range(rows):
@@ -230,7 +230,7 @@ class ZhangCalibrationLogic:
     def detectCorners(self, imagePaths: List[str], save_visualizations: bool = True) -> int:
         print(f"Detecting corners in {len(imagePaths)} images...")
         # principle logic for detecting corners in all the images
-        print(f"Looking for checkerboard with {self.config.checkerboard_size[0]}x{self.config.checkerboard_size[1]} inner corners")
+        print(f"Looking for checkerboard with {self.config.checkerboardSize[0]}x{self.config.checkerboardSize[1]} inner corners")
         
         successful_detections = 0
         
@@ -350,7 +350,7 @@ class OpenCVCalibration:
     
     def _generate_world_points(self) -> np.ndarray:
         """Generate 3D world coordinates for checkerboard."""
-        cols, rows = self.config.checkerboard_size
+        cols, rows = self.config.checkerboardSize
         world_points = np.zeros((rows * cols, 3), dtype=np.float32)
         for i in range(rows):
             for j in range(cols):
@@ -373,7 +373,7 @@ class OpenCVCalibration:
             if image_size is None:
                 image_size = gray.shape[::-1]
             
-            ret, corners = cv2.findChessboardCorners(gray, self.config.checkerboard_size, None)
+            ret, corners = cv2.findChessboardCorners(gray, self.config.checkerboardSize, None)
             
             if ret:
                 criteria = (cv2.TERM_CRITERIA_EPS + cv2.TERM_CRITERIA_MAX_ITER, 30, 0.001)
@@ -496,7 +496,6 @@ def findCalibrationImages(image_dir: str) -> List[str]:
         imagePaths.extend(glob.glob(os.path.join(image_dir, ext)))
     return sorted(imagePaths)
 
-
 def main():
     # main program run start up and process
     script_dir = Path(__file__).parent
@@ -507,7 +506,6 @@ def main():
     if not imagePaths:
         print(f"no images found in '{image_dir}' directory")
         return
-    
     print(f"found {len(imagePaths)} calibration images in: {image_dir}")
     
     # detecting checkerboard size
@@ -518,19 +516,19 @@ def main():
     detectedSize = CheckerboardSizeDetector.detect_size(imagePaths[0])
 
     # NOTE: this is a default size if the auto detection fails, happened quite a bit in my initial approach, hardcoding in the size preemptively worked for the rest of the implementations but  auto detection works great now
-    checkerboard_size = detectedSize if detectedSize else (13, 9)
+    checkerboardSize = detectedSize if detectedSize else (13, 9)
     
     if detectedSize is None:
         print("\n auto detection failed. use given default config")
-        print(f"setting CHECKERBOARD_SIZE to {checkerboard_size}")
+        print(f"setting checkerboard size to {checkerboardSize}")
     
     # sets in motion the configuration
     config = CalibrationConfig(
-        checkerboard_size=checkerboard_size,
+        checkerboardSize=checkerboardSize,
         squareSize=20.0,
         outputDir=str(project_root / "output")
     )
-    print(f"\nusing checkerboard size: {config.checkerboard_size}")
+    print(f"\nusing checkerboard size: {config.checkerboardSize}")
     print(f"square size: {config.squareSize} mm")
     print(f"visuals shown in directory: {config.outputDir}")
     print("*"*60)
