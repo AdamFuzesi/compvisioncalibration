@@ -547,8 +547,8 @@ def main():
     
     # using built in open cv method to compare results between my manual implementation... please refer to terminal output
     opencvCalibrator = OpenCVCalibration(config)
-    opencv_params = opencvCalibrator.calibrate(imagePaths)
-    CalibrationComparator.compare(zhang_params, opencv_params)
+    ocvParams = opencvCalibrator.calibrate(imagePaths)
+    CalibrationComparator.compare(zhang_params, ocvParams)
     
     print("\n calibration complete!")
     print(f"corner detection images saved to {config.corner_detection_dir}")
