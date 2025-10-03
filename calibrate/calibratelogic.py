@@ -104,13 +104,13 @@ class CornerDetector:
 class HomographyEstimator:
     # estimates the homography matrices using Direct Linear Transform.
     @staticmethod
-    def estimate(world_pts: np.ndarray, image_pts: np.ndarray) -> np.ndarray:
+    def estimate(worldP: np.ndarray, image_pts: np.ndarray) -> np.ndarray:
         # trying to estimate homography matrix from differing world points to image points using dlt trans
-        n_points = len(world_pts)
+        n_points = len(worldP)
         A = np.zeros((2 * n_points, 9))
         
         for i in range(n_points):
-            X, Y = world_pts[i, 0], world_pts[i, 1]
+            X, Y = worldP[i, 0], worldP[i, 1]
             u, v = image_pts[i, 0], image_pts[i, 1]
             # builds matrix a for homogeneous linear system process
             A[2*i] = [-X, -Y, -1, 0, 0, 0, u*X, u*Y, u]
@@ -158,12 +158,12 @@ class IntrinsicEstimator:
         B11, B12, B22, B13, B23, B33 = b
         v0 = (B12 * B13 - B11 * B23) / (B11 * B22 - B12**2)
         # then recover
-        lambda_ = B33 - (B13**2 + v0 * (B12 * B13 - B11 * B23)) / B11
+        lambdaBasis = B33 - (B13**2 + v0 * (B12 * B13 - B11 * B23)) / B11
         
-        alpha = np.sqrt(lambda_ / B11)
-        beta = np.sqrt(lambda_ * B11 / (B11 * B22 - B12**2))
-        gamma = -B12 * alpha**2 * beta / lambda_
-        u0 = gamma * v0 / beta - B13 * alpha**2 / lambda_
+        alpha = np.sqrt(lambdaBasis / B11)
+        beta = np.sqrt(lambdaBasis * B11 / (B11 * B22 - B12**2))
+        gamma = -B12 * alpha**2 * beta / lambdaBasis
+        u0 = gamma * v0 / beta - B13 * alpha**2 / lambdaBasis
         # and boom voila MATRIX
         return np.array([
             [alpha, gamma, u0],
@@ -182,12 +182,12 @@ class ExtrinsicEstimator:
         # scale factor
         lambda1 = 1.0 / np.linalg.norm(K_inv @ h1)
         lambda2 = 1.0 / np.linalg.norm(K_inv @ h2)
-        lambda_ = (lambda1 + lambda2) / 2.0
+        lambdaBasis = (lambda1 + lambda2) / 2.0
         # extracts the rotation columns and translation
-        r1 = lambda_ * (K_inv @ h1)
-        r2 = lambda_ * (K_inv @ h2)
+        r1 = lambdaBasis * (K_inv @ h1)
+        r2 = lambdaBasis * (K_inv @ h2)
         r3 = np.cross(r1, r2)
-        t = lambda_ * (K_inv @ h3)
+        t = lambdaBasis * (K_inv @ h3)
         # construct rotation matrix and enforce orthogonality using SVD
         R = np.column_stack([r1, r2, r3])
         U, _, Vt = np.linalg.svd(R)
@@ -266,18 +266,16 @@ class ZhangCalibrationLogic:
             raise ValueError("Need at least 3 images with detected corners for calibration")
         
         print("\n--------- Zhang's Calibration ---------")
-        
-        # Step 1: Estimate homographies
+        #steps in the algo process, in order: step 1: estimate homographies, step 2: estimate intrinsic matrix, step 3: estimate extrinsic parameters
         print("\n" + "*"*60)
         print("estimating homographies...")
         print("*"*60)
         self.homographies = []
-        for i, (world_pts, image_pts) in enumerate(zip(self.world_points_list, self.image_points_list)):
-            H = HomographyEstimator.estimate(world_pts, image_pts)
+        for i, (worldP, image_pts) in enumerate(zip(self.world_points_list, self.image_points_list)):
+            H = HomographyEstimator.estimate(worldP, image_pts)
             self.homographies.append(H)
             print(f"  View {i+1}: Homography estimated")
         
-        # Step 2: Estimate intrinsic matrix
         print("\n" + "*"*60)
         print("estimating intrinsic matrix K...")
         print("*"*60)
@@ -285,7 +283,6 @@ class ZhangCalibrationLogic:
         print("Intrinsic matrix K:")
         print(self.K)
         
-        # Step 3: Estimate extrinsic parameters
         print("\n" + "*"*60)
         print("estimating extrinsic parameters...")
         print("*"*60)
@@ -308,20 +305,19 @@ class ZhangCalibrationLogic:
             print(f"      {R}")
             print()
         
-        # Compute reprojection error
-        mean_error = self._compute_reprojection_error()
-        print(f"\nMean reprojection error: {mean_error:.4f} pixels")
-        
+        # computing the reprojection error
+        mean_error = self.computeReprojectionError()
+        print(f"\n mean reprojection error: {mean_error:.4f} pixels")
         return self.K, self.rvecs, self.tvecs
     
-    def _compute_reprojection_error(self) -> float:
-        """Compute mean reprojection error across all views."""
+    def computeReprojectionError(self) -> float:
+        # computes mean reprojection error across all views
         totalError = 0
         totalPoints = 0
         
-        for i, (world_pts, image_pts) in enumerate(zip(self.world_points_list, self.image_points_list)):
+        for i, (worldP, image_pts) in enumerate(zip(self.world_points_list, self.image_points_list)):
             projected_pts, _ = cv2.projectPoints(
-                world_pts, self.rvecs[i], self.tvecs[i], self.K, None
+                worldP, self.rvecs[i], self.tvecs[i], self.K, None
             )
             projected_pts = projected_pts.reshape(-1, 2)
             
@@ -331,10 +327,10 @@ class ZhangCalibrationLogic:
         
         return totalError / totalPoints
     
-    def get_intrinsic_parameters(self) -> Dict[str, float]:
-        """Extract individual intrinsic parameters as a dictionary."""
+    def getIntrinsicParameters(self) -> Dict[str, float]:
         if self.K is None:
             return {}
+        # to return the intrinsic parameters as a dictionary
         
         return {
             'fx': self.K[0, 0],
@@ -491,10 +487,7 @@ class CheckerboardSizeDetector:
         return None
 
 
-
-
-
-def find_calibration_images(image_dir: str) -> List[str]:
+def findCalibrationImages(image_dir: str) -> List[str]:
     # simple start up logic to find adn load images
     extensions = ['*.jpg', '*.png']
     # had some png versions at first from screenshots and trial pics
@@ -511,7 +504,7 @@ def main():
     project_root = script_dir.parent
     image_dir = project_root / "images"
     # locating calibration images
-    imagePaths = find_calibration_images(str(image_dir))
+    imagePaths = findCalibrationImages(str(image_dir))
     if not imagePaths:
         print(f"no images found in '{image_dir}' directory")
         return
@@ -553,7 +546,7 @@ def main():
         return
     
     K_zhang, rvecs_zhang, tvecs_zhang = zhang.calibrate()
-    zhang_params = zhang.get_intrinsic_parameters()
+    zhang_params = zhang.getIntrinsicParameters()
     
     # using built in open cv method to compare results between my manual implementation... please refer to terminal output
     opencvCalibrator = OpenCVCalibration(config)
