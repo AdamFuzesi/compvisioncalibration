@@ -122,7 +122,6 @@ class HomographyEstimator:
         # normalizes so that h[2, 2] iss 1
         return H / H[2, 2]
 
-
 class IntrinsicEstimator:
     # functionn estimates camera intrinsic parameters from homographies.
     @staticmethod
@@ -170,7 +169,6 @@ class IntrinsicEstimator:
             [0, beta, v0],
             [0, 0, 1]
         ])
-
 
 class ExtrinsicEstimator:
     # function to estimate extrinsic params for each view
@@ -340,7 +338,6 @@ class ZhangCalibrationLogic:
             'skew': self.K[0, 1]
         }
 
-
 class OpenCVCalibration:
     """OpenCV calibration for comparison with Zhang's method."""
     
@@ -425,7 +422,6 @@ class OpenCVCalibration:
             'cy': K[1, 2]
         }
 
-
 class CalibrationComparator:
     # function to compare zhang's method with opencv calibrations resutls
     @staticmethod
@@ -448,7 +444,6 @@ class CalibrationComparator:
         print("\n" + "*"*60)
         print(f"Zhang's skew parameter: {zhang_result.get('skew', 0):.6f}")
         print("*"*60)
-
 
 class CheckerboardSizeDetector:
     """Auto-detect checkerboard size from images."""
@@ -487,26 +482,26 @@ class CheckerboardSizeDetector:
         return None
 
 
-def findCalibrationImages(image_dir: str) -> List[str]:
+def findCalibrationImages(imageDir: str) -> List[str]:
     # simple start up logic to find adn load images
     extensions = ['*.jpg', '*.png']
     # had some png versions at first from screenshots and trial pics
     imagePaths = []
     for ext in extensions:
-        imagePaths.extend(glob.glob(os.path.join(image_dir, ext)))
+        imagePaths.extend(glob.glob(os.path.join(imageDir, ext)))
     return sorted(imagePaths)
 
 def main():
     # main program run start up and process
-    script_dir = Path(__file__).parent
-    project_root = script_dir.parent
-    image_dir = project_root / "images"
+    scriptDir = Path(__file__).parent
+    projectRoot = scriptDir.parent
+    imageDir = projectRoot / "images"
     # locating calibration images
-    imagePaths = findCalibrationImages(str(image_dir))
+    imagePaths = findCalibrationImages(str( ))
     if not imagePaths:
-        print(f"no images found in '{image_dir}' directory")
+        print(f"no images found in '{imag e_dir}' directory")
         return
-    print(f"found {len(imagePaths)} calibration images in: {image_dir}")
+    print(f"found {len(imagePaths)} calibration images in: {ima ge_dir}")
     
     # detecting checkerboard size
     print("\n" + "*"*60)
@@ -526,7 +521,7 @@ def main():
     config = CalibrationConfig(
         checkerboardSize=checkerboardSize,
         squareSize=20.0,
-        outputDir=str(project_root / "output")
+        outputDir=str(projectRoot / "output")
     )
     print(f"\nusing checkerboard size: {config.checkerboardSize}")
     print(f"square size: {config.squareSize} mm")
