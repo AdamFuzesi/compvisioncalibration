@@ -492,7 +492,6 @@ def findCalibrationImages(image_dir: str) -> List[str]:
     extensions = ['*.jpg', '*.png']
     # had some png versions at first from screenshots and trial pics
     imagePaths = []
-    
     for ext in extensions:
         imagePaths.extend(glob.glob(os.path.join(image_dir, ext)))
     return sorted(imagePaths)
