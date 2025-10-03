@@ -72,8 +72,8 @@ class CornerDetector:
                             corners = corners / scale
                         # refine corner accuracy
                         criteria = (cv2.TERM_CRITERIA_EPS + cv2.TERM_CRITERIA_MAX_ITER, 30, 0.001)
-                        corners_refined = cv2.cornerSubPix(original_gray, corners, (11, 11), (-1, -1), criteria)
-                        return True, corners_refined
+                        refinedCorners = cv2.cornerSubPix(original_gray, corners, (11, 11), (-1, -1), criteria)
+                        return True, refinedCorners
                         
                 except Exception:
                     continue
@@ -377,19 +377,19 @@ class OpenCVCalibration:
             
             if ret:
                 criteria = (cv2.TERM_CRITERIA_EPS + cv2.TERM_CRITERIA_MAX_ITER, 30, 0.001)
-                corners_refined = cv2.cornerSubPix(gray, corners, (11, 11), (-1, -1), criteria)
+                refinedCorners = cv2.cornerSubPix(gray, corners, (11, 11), (-1, -1), criteria)
                 
                 world_points_list.append(self.world_points)
-                image_points_list.append(corners_refined)
+                image_points_list.append(refinedCorners)
         
         # Calibrate camera
         ret, K, dist_coeffs, rvecs, tvecs = cv2.calibrateCamera(
             world_points_list, image_points_list, image_size, None, None
         )
         
-        print("Intrinsic matrix K:")
+        print("intrinsic matrix K:")
         print(K)
-        print("\nDistortion coefficients:")
+        print("\n distortion coefficients:")
         print(dist_coeffs)
         
         print(f"\nextrinsic parameters obtained for {len(rvecs)} images:")
